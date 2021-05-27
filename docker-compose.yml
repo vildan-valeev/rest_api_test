@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  sync:
+    build: ./sync
+    command: python manage.py runserver 0.0.0.0:7000
+    volumes:
+      - ./backend/:/usr/src/app/
+    ports:
+      - 7000:7000
+  async:
+    build: ./async
+    command: python app.py
+    volumes:
+      - ./backend/:/usr/src/app/
+    ports:
+      - 9000:9000
