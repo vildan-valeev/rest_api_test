@@ -25,8 +25,8 @@ class SumArray(GenericAPIView):
         Return answer.
         """
         print(request.data)
-        # upload = UploadSerializer(data=request.FILES['file'])
-        # self.get_s
+        print('session', request.session)
+
         upload = self.get_serializer(data=request.data,)
         print(upload)
         # print(upload)
