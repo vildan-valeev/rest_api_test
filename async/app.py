@@ -16,6 +16,7 @@ app.blueprint(openapi2_blueprint)
 @app.route("/api/v1/set/", methods=['POST'])
 @doc.consumes(doc.File(name="file"), location="formData", content_type="multipart/form-data")
 @doc.description('Set  json file  with "Array" key in dict.')
+@doc.tag("send json file")
 async def set_array(request):
     input_file = request.files.get('file')
     content = input_file.body
@@ -35,6 +36,7 @@ async def set_array(request):
     ),
     location="body",)
 @doc.description('Getting result by ID')
+@doc.tag("get_sum_by_id")
 async def get_sum_by_id(request):
     data = request.json
     # -----  если есть уже расситанный в куках реквеста с совпадающим ID (повторное обращение за данными) ------
@@ -65,4 +67,4 @@ async def index(request):
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=9000, debug=True)
+    app.run(host="0.0.0.0", port=9000, debug=True)
