@@ -17,7 +17,6 @@ app.blueprint(openapi2_blueprint)
 @doc.consumes(doc.File(name="file"), location="formData", content_type="multipart/form-data")
 @doc.description('Set  json file  with "Array" key in dict.')
 async def set_array(request):
-    # print(request.files)
     input_file = request.files.get('file')
     content = input_file.body
     result_num = await get_sum(jsn.loads(content)['array'])
@@ -38,30 +37,17 @@ async def set_array(request):
 @doc.description('Getting result by ID')
 async def get_sum_by_id(request):
     data = request.json
-    # print(data['ID'])
-
-    # print(request.ctx.session.sid)
-    # print(session.interface.session_store)
-    # print()
-    # print(request.ctx.session.values())
-
     # -----  если есть уже расситанный в куках реквеста с совпадающим ID (повторное обращение за данными) ------
-    print(data)
-    print(request.ctx.session)
+
     if {'ID', 'SUM'}.issubset(request.ctx.session.keys()) and request.ctx.session['ID'] == data['ID']:
         resp = {'SUM': request.ctx.session['SUM']}
         return json(resp, status=200)
 
-    print('RERE')
     # -----  если сессия реквеста не та или нету, но запрос по ID, то ищем sum в сохраненных session------
     for i in session.interface.session_store:
-        # print(session.interface.session_store[i], type(session.interface.session_store[i]))
         dict_i = jsn.loads(session.interface.session_store[i])
-        # print(dict_i, dict_i['ID'])
-
         if {'ID', 'SUM'}.issubset(dict_i.keys()) and data['ID'] == dict_i['ID']:
             resp = {'SUM': dict_i['SUM']}
-            # print('BOOOOTT!!')
             return json(resp, status=200)
 
     return json({'Failure': 'ID not found. If you want to get SUM, send json file to ../api/v1/set/ endpoint'}, 404)
