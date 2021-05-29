@@ -1,62 +1,71 @@
-import json
 import random
-import time
-import aioredis
-from aiohttp import web
-from aiohttp_session import setup, get_session, redis_storage
 
-
-
+from sanic import Sanic
+import json as jsn
+from sanic_session import Session
+from sanic.response import json
+from sanic_session.memory import InMemorySessionInterface
 
 from util import get_sum
 
-app = web.Application()
-routes = web.RouteTableDef()
+app = Sanic(name='TEST_APP')
+session = Session(app, interface=InMemorySessionInterface())
 
 
-
-
-@routes.post('/api/v1/set/')
+@app.route("/api/v1/set/", methods=['POST'])
 async def set_array(request):
-    data = await request.post()
-    input_file = data['file'].file
-    content = input_file.read()
-    num = await get_sum(json.loads(content)['array'])
-    return web.json_response(data={"ID": random.randint(0, 10000), "Sum": num})
+    print(request.files)
+    input_file = request.files.get('file')
+    content = input_file.body
+    result_num = await get_sum(jsn.loads(content)['array'])
+    result_id = random.randint(0, 10000)
+    request.ctx.session['ID'] = result_id
+    request.ctx.session['SUM'] = result_num
+
+    return json({"ID": result_id, "SUM": result_num})
 
 
-@routes.post('/api/v1/sum/')
+@app.route("/api/v1/sum/", methods=['POST'])
 async def get_sum_by_id(request):
-    data = await request.post()
-    input_file = data['file'].file
-    content = input_file.read()
-    num = await get_sum(json.loads(content)['array'])
-    return web.json_response(data={"Sum": num})
+    data = request.json
+    print(data['ID'])
+
+    # print(request.ctx.session.sid)
+    # print(session.interface.session_store)
+    # print()
+    # print(request.ctx.session.values())
+
+    # -----  если есть уже расситанный в куках реквеста с совпадающим ID (повторное обращение за данными) ------
+    print(data)
+    print(request.ctx.session)
+    if {'ID', 'SUM'}.issubset(request.ctx.session.keys()) and request.ctx.session['ID'] == data['ID']:
+        resp = {'SUM': request.ctx.session['SUM']}
+        return json(resp, status=200)
+
+    print('RERE')
+    # -----  если сессия реквеста не та или нету, но запрос по ID, то ищем sum в сохраненных session------
+    for i in session.interface.session_store:
+        # print(session.interface.session_store[i], type(session.interface.session_store[i]))
+        dict_i = jsn.loads(session.interface.session_store[i])
+        # print(dict_i, dict_i['ID'])
+
+        if {'ID', 'SUM'}.issubset(dict_i.keys()) and data['ID'] == dict_i['ID']:
+            resp = {'SUM': dict_i['SUM']}
+            # print('BOOOOTT!!')
+            return json(resp, status=200)
+
+    return json({'Failure': 'ID not found. If you want to get SUM, send json file to ../api/v1/set/ endpoint'}, 404)
 
 
-@routes.get('/api/v1/visit/')
-async def handler(request):
-    session = await get_session(request)
-
-    last_visit = session['last_visit'] if 'last_visit' in session else None
-    session['last_visit'] = time.time()
-
-    text = 'Last visited: {}'.format(last_visit)
-
-    response = web.Response(text=text)
-
-    return response
+@app.get("/api/v1/visit/")
+async def index(request):
+    if not request.ctx.session.get('foo'):
+        request.ctx.session['foo'] = 0
+    request.ctx.session['foo'] += 1
+    print(request.ctx.session, request.ctx.session.sid)
+    print(session.interface.session_store, type(session.interface.session_store), )
+    return json({"foo": request.ctx.session['foo']})
 
 
-async def make_app():
-    app = web.Application()
-
-    redis = await aioredis.create_pool(('localhost', 6379))
-    storage = redis_storage.RedisStorage(redis)
-    setup(app, storage)
-    app.add_routes(routes)
-    return app
-
-
-if __name__ == '__main__':
-    web.run_app(make_app(), port=9000)
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=9000, debug=True)
