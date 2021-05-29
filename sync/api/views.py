@@ -6,7 +6,6 @@ from rest_framework import status
 from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import MultiPartParser
 from rest_framework.response import Response
-from rest_framework.views import APIView
 
 from api.serializers import UploadSerializer, GetSumSerializer
 
@@ -34,17 +33,18 @@ class SetArray(GenericAPIView):
             file = upload.validated_data['file']
             x = file.read()
             nums = json.loads(x)['array']
-            print(nums)
-            result = self.calculate_sum(nums)
-            ID = random.randint(0, 10000)
-            resp = {'ID': ID, 'SUM': result}
-            request.session['ID'] = ID
-            request.session['sum'] = result
+            # print(nums)
+            result_sum = self.calculate_sum(nums)
+            result_id = random.randint(0, 10000)
+            resp = {'ID': result_id, 'SUM': result_sum}
+            request.session['ID'] = result_id
+            request.session['sum'] = result_sum
             return Response(resp)
 
         return Response({"Failure": "Error"}, status=status.HTTP_400_BAD_REQUEST)
 
-    def calculate_sum(self, nums):
+    @staticmethod
+    def calculate_sum(nums):
         """"""
         # если встречаются значения с точкой, запятой - приводим к общему виду float
         buf = []
@@ -53,15 +53,16 @@ class SetArray(GenericAPIView):
                 continue
             buf.append(i.replace(',', '.'))
         # проверяем тип, суммируем
-        sum = 0
+        result = 0
         for n in buf:
             f = float(n)
             try:
                 if isinstance(f, float):
-                    sum += f
+                    result += f
             except ValueError as ex:
+                print(f'for log: {ex}')
                 continue
-        return sum
+        return result
 
 
 class GetSum(GenericAPIView):
@@ -72,8 +73,6 @@ class GetSum(GenericAPIView):
         serializer = GetSumSerializer(data=request.data)
         if serializer.is_valid():
             request_data = serializer.validated_data
-            # print('session_data', request.session, request.session.keys(), request.session.items(),
-            #       request.session.session_key, type(request.session.keys()))
 
             # -----  если есть уже расситанный в куках реквеста с совпадающим ID ------
             if {'ID', 'sum'}.issubset(request.session.keys()) and request.session['ID'] == request_data['ID']:
@@ -81,11 +80,10 @@ class GetSum(GenericAPIView):
                 return Response(resp, status=status.HTTP_200_OK)
 
             # -----  если сессия реквеста не та или нету, но запрос по ID, то ищем sum в бд - модели session------
-            # print('validated_data', request_data)
-            # s = Session.objects.get(pk=request.session.session_key)
+
             for i in Session.objects.all():
                 s_data = i.get_decoded()
-                print('session_i', s_data)
+                # print('session_i', s_data)
                 if 'ID' in s_data and request_data['ID'] == s_data['ID']:
                     resp = {'SUM': i.get_decoded()['sum']}
 
