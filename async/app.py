@@ -5,16 +5,19 @@ import json as jsn
 from sanic_session import Session
 from sanic.response import json
 from sanic_session.memory import InMemorySessionInterface
-
+from sanic_openapi import openapi2_blueprint, doc
 from util import get_sum
 
 app = Sanic(name='TEST_APP')
 session = Session(app, interface=InMemorySessionInterface())
+app.blueprint(openapi2_blueprint)
 
 
 @app.route("/api/v1/set/", methods=['POST'])
+@doc.consumes(doc.File(name="file"), location="formData", content_type="multipart/form-data")
+@doc.description('Set  json file  with "Array" key in dict.')
 async def set_array(request):
-    print(request.files)
+    # print(request.files)
     input_file = request.files.get('file')
     content = input_file.body
     result_num = await get_sum(jsn.loads(content)['array'])
@@ -26,9 +29,16 @@ async def set_array(request):
 
 
 @app.route("/api/v1/sum/", methods=['POST'])
+@doc.consumes(doc.JsonBody(
+        {
+            "ID": doc.Integer(0000),
+        }
+    ),
+    location="body",)
+@doc.description('Getting result by ID')
 async def get_sum_by_id(request):
     data = request.json
-    print(data['ID'])
+    # print(data['ID'])
 
     # print(request.ctx.session.sid)
     # print(session.interface.session_store)
@@ -58,6 +68,7 @@ async def get_sum_by_id(request):
 
 
 @app.get("/api/v1/visit/")
+@doc.description('Click click ...)))')
 async def index(request):
     if not request.ctx.session.get('foo'):
         request.ctx.session['foo'] = 0
