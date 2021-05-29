@@ -3,6 +3,7 @@ version: '3'
 services:
   sync:
     build: ./sync
+    container_name: Django
     command: python manage.py runserver 0.0.0.0:7000
     volumes:
       - ./sync/:/usr/src/app/
@@ -10,6 +11,7 @@ services:
       - 7000:7000
   async:
     build: ./async
+    container_name: Sanic
     command: python app.py
     volumes:
       - ./async/:/usr/src/app/
