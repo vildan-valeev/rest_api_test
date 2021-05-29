@@ -74,7 +74,7 @@ class GetSum(GenericAPIView):
         if serializer.is_valid():
             request_data = serializer.validated_data
 
-            # -----  если есть уже расситанный в куках реквеста с совпадающим ID ------
+            # -----  если есть уже расситанный в куках реквеста с совпадающим ID (повторное обращение за данными)------
             if {'ID', 'sum'}.issubset(request.session.keys()) and request.session['ID'] == request_data['ID']:
                 resp = {'SUM': request.session['sum']}
                 return Response(resp, status=status.HTTP_200_OK)

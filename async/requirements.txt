@@ -1,1 +1,7 @@
 aiohttp
+aiohttp_session
+cryptography
+aiofiles
+
+sanic
+sanic_session
