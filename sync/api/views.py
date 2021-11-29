@@ -19,16 +19,7 @@ class SetArray(GenericAPIView):
         """
         Return answer.
         """
-        # print(request.data)
-        # print('session', request.session.keys(), request.session.items(), request.session.session_key)
-        # print(dir(request.session))
         upload = self.get_serializer(data=request.data, )
-        # print(upload)
-
-        # num_visits = request.session.get('num_visits', 0)
-        # print(num_visits)
-        # request.session['num_visits'] = num_visits + 1
-
         if upload.is_valid():
             file = upload.validated_data['file']
             x = file.read()
